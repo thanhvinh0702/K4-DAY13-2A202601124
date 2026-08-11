@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from structlog.contextvars import bind_contextvars, clear_contextvars
+
 from app import agent as agent_module
 
 
@@ -31,6 +33,7 @@ class RecordingLangfuseClient:
 
 
 def test_agent_links_prompt_version_to_trace_and_generation(monkeypatch) -> None:
+    clear_contextvars()
     monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "test-public-key")
     monkeypatch.setenv("LANGFUSE_SECRET_KEY", "test-secret-key")
     monkeypatch.setenv("LANGFUSE_PROMPT_NAME", "day13-chat")
@@ -57,3 +60,25 @@ def test_agent_links_prompt_version_to_trace_and_generation(monkeypatch) -> None
     }
     assert generation_update["prompt"] is client.prompt
     assert generation_update["metadata"]["prompt_version"] == "3"
+
+
+def test_agent_adds_request_correlation_id_to_trace_metadata(monkeypatch) -> None:
+    monkeypatch.setenv("LANGFUSE_PUBLIC_KEY", "test-public-key")
+    monkeypatch.setenv("LANGFUSE_SECRET_KEY", "test-secret-key")
+    client = RecordingLangfuseClient()
+    monkeypatch.setattr(agent_module, "get_langfuse_client", lambda: client)
+    bind_contextvars(correlation_id="req-1234abcd")
+
+    try:
+        agent = agent_module.LabAgent()
+        agent_module.LabAgent.run.__wrapped__(
+            agent,
+            user_id="student-01",
+            feature="qa",
+            session_id="session-01",
+            message="Explain traces",
+        )
+    finally:
+        clear_contextvars()
+
+    assert client.trace_updates[-1]["metadata"]["correlation_id"] == "req-1234abcd"
