@@ -1,16 +1,61 @@
+schema_version: 1
 service: day13-observability-lab
+owner: sre-alerts
 window: 28d
+timezone: Asia/Bangkok
+data_source: data/logs.jsonl
+
+# SLO được tính trên traffic thật. Khoảng không có request không được coi là đạt.
 slis:
   latency_p95_ms:
+    description: Tỷ lệ cửa sổ 5 phút có p95 latency của request thành công không quá 3 giây.
+    good_event: 'p95(response_sent.latency_ms) <= 3000 over 5m'
+    valid_event: 'count(response_sent) > 0 over 5m'
     objective: 3000
+    unit: ms
     target: 99.5
-    note: Replace with your group's target
+    target_unit: percent_of_valid_5m_windows
+    dashboard_panel: latency
+
   error_rate_pct:
+    description: Tỷ lệ request không phát sinh request_failed trong cửa sổ 5 phút.
+    good_event: 'request_received without matching request_failed by correlation_id'
+    valid_event: 'event == "request_received"'
     objective: 2
+    unit: percent
     target: 99.0
+    target_unit: percent_successful_requests
+    dashboard_panel: errors
+
   daily_cost_usd:
+    description: Guardrail ngân sách; tổng chi phí response_sent mỗi ngày không vượt 2.5 USD.
+    good_event: 'sum(response_sent.cost_usd) <= 2.5 over 1d'
+    valid_event: 'count(response_sent) > 0 over 1d'
     objective: 2.5
+    unit: usd_per_day
     target: 100.0
+    target_unit: percent_of_valid_days
+    dashboard_panel: cost
+
   quality_score_avg:
+    description: Tỷ lệ cửa sổ 1 giờ có quality proxy trung bình ít nhất 0.75.
+    good_event: 'mean(response_sent.quality_score) >= 0.75 over 1h'
+    valid_event: 'count(response_sent) >= 5 over 1h'
     objective: 0.75
+    unit: score_0_to_1
     target: 95.0
+    target_unit: percent_of_valid_1h_windows
+    dashboard_panel: quality
+
+error_budget_policy:
+  latency_p95_ms: 0.5_percent_of_valid_5m_windows
+  error_rate_pct: 1_percent_failed_requests
+  daily_cost_usd: no_budget_overrun
+  quality_score_avg: 5_percent_of_valid_1h_windows
+
+review:
+  cadence: weekly
+  owner: sre-alerts
+  notes:
+    - Đánh giá lại threshold sau khi có ít nhất 7 ngày dữ liệu production.
+    - Không hạ threshold chỉ để dập alert; mọi thay đổi phải có evidence và được nhóm đồng thuận.
