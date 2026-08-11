@@ -23,7 +23,7 @@
   - Kết quả: **FAILED** required fields, correlation ID propagation và log enrichment; **PASSED** PII scrubbing.
 - Điểm `validate_logs.py` sau khi hoàn thiện CP1: 100/100 — 24 bản ghi hợp lệ, 13 correlation ID duy nhất, 0 bản ghi thiếu enrichment, 0 PII leak
 - Điểm `validate_logs.py` khi kiểm tra cuối: **100/100** — 9 bản ghi JSON hợp lệ được phân tích, 5 correlation ID duy nhất, 0 bản ghi thiếu required fields/enrichment và 0 PII leak.
-- Tổng số traces: **65** traces trên Langfuse tại thời điểm kiểm tra ngày 11/08/2026.
+- Tổng số traces: **70** traces trên Langfuse tại thời điểm kiểm tra ngày 11/08/2026.
 - Số PII leak còn lại: **0** theo `python scripts/validate_logs.py`.
 - Link/đường dẫn dashboard: [Dashboard contract 6 panel](../config/dashboard.yaml); evidence runtime gồm [latency, traffic và errors](evidence/dashboard-1.png) cùng [cost, tokens và quality](evidence/dashboard-2.png).
 
@@ -38,10 +38,10 @@
 ## 4. Prompt versioning
 
 - Prompt name: `day13-chat` (text prompt).
-- Version/label baseline: version **1**, hiện có labels `production` và `latest`; trace xác nhận `prompt_source=langfuse`.
-- Version/label candidate: **Chưa tạo** — Langfuse hiện chỉ trả về version 1, chưa có label `candidate`.
-- Trace ID của mỗi version: version 1/`production`: [`7ea651388c67ca038f627ab695552192`](https://cloud.langfuse.com/project/cmsoemc2e01p1ad0dcg4qp9c6/traces/7ea651388c67ca038f627ab695552192); candidate: **chưa có trace**.
-- Bằng chứng đổi label hoặc rollback: **Chưa thực hiện/chưa có ảnh evidence**. Cần tạo version 2, gắn `candidate`, chạy cùng input, chuyển `production` sang version 2 rồi rollback về version 1 và lưu ảnh vào `submission/evidence/`.
+- Version/label baseline: version **1**, từng được phục vụ qua label `production`; trace xác nhận `prompt_source=langfuse`, `prompt_version=1` và `prompt_label=production`.
+- Version/label candidate: version **2**, hiện được promote với labels `production` và `latest`; trace xác nhận `prompt_source=langfuse`, `prompt_version=2` và `prompt_label=production`.
+- Trace ID của mỗi version: version 1: [`7ea651388c67ca038f627ab695552192`](https://cloud.langfuse.com/project/cmsoemc2e01p1ad0dcg4qp9c6/traces/7ea651388c67ca038f627ab695552192); version 2: [`86af0cf108846714080e5c1ed9ee6ec7`](https://cloud.langfuse.com/project/cmsoemc2e01p1ad0dcg4qp9c6/traces/86af0cf108846714080e5c1ed9ee6ec7).
+- Bằng chứng đổi label hoặc rollback: [Prompt versioning và trace version 2](evidence/prompt-versioning.png). Evidence cho thấy prompt có version 1 và 2, label `production`/`latest` đang trỏ tới version 2; đối chiếu với trace version 1 từng dùng `production` chứng minh thao tác promote label từ version 1 sang version 2.
 
 ## 5. Dashboard, SLO và alerts
 
