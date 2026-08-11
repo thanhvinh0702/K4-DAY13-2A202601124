@@ -1,19 +1,62 @@
+schema_version: 1
+service: day13-observability-lab
+default_owner: sre-alerts
+evaluation_interval: 30s
+data_source: data/logs.jsonl
+
 alerts:
-  - name: TODO_alert_1
-    severity: TODO
-    condition: TODO
+  - name: ChatHighErrorRate
+    severity: critical
+    sli: error_rate_pct
+    condition: 'count(request_failed) / count(request_received) * 100 > 2'
+    duration: 5m
+    minimum_requests: 10
     type: symptom-based
-    owner: TODO
-    runbook: docs/alerts.md#alert-1
-  - name: TODO_alert_2
-    severity: TODO
-    condition: TODO
+    owner: sre-alerts
+    notification: primary-on-call
+    no_data: no_alert
+    runbook: docs/alerts.md#chathigherrorrate
+    summary: Người dùng đang nhận lỗi vượt error-rate SLO 2%.
+
+  - name: ChatHighLatencyP95
+    severity: warning
+    sli: latency_p95_ms
+    condition: 'p95(response_sent.latency_ms) > 3000'
+    duration: 10m
+    minimum_requests: 10
     type: symptom-based
-    owner: TODO
-    runbook: docs/alerts.md#alert-2
-  - name: TODO_alert_3
-    severity: TODO
-    condition: TODO
+    owner: sre-alerts
+    notification: team-sre-alerts
+    no_data: no_alert
+    runbook: docs/alerts.md#chathighlatencyp95
+    summary: Ít nhất 5% request thành công đang chậm hơn ngưỡng trải nghiệm 3 giây.
+
+  - name: DailyAICostBudgetRisk
+    severity: warning
+    sli: daily_cost_usd
+    condition: 'sum(response_sent.cost_usd) over 1d > 2.0'
+    duration: 15m
     type: symptom-based
-    owner: TODO
-    runbook: docs/alerts.md#alert-3
+    owner: sre-alerts
+    notification: team-sre-alerts
+    no_data: no_alert
+    runbook: docs/alerts.md#dailyaicostbudgetrisk
+    summary: Chi phí ngày đã dùng hơn 80% ngân sách 2.5 USD.
+
+  - name: ChatQualityDegraded
+    severity: warning
+    sli: quality_score_avg
+    condition: 'mean(response_sent.quality_score) < 0.75'
+    duration: 30m
+    minimum_responses: 10
+    type: symptom-based
+    owner: ai-quality-and-sre
+    notification: team-ai-quality
+    no_data: no_alert
+    runbook: docs/alerts.md#chatqualitydegraded
+    summary: Chất lượng phản hồi trung bình thấp hơn quality SLO 0.75.
+
+inhibition:
+  - source: ChatHighErrorRate
+    suppress: ChatHighLatencyP95
+    reason: Khi phần lớn request lỗi, error alert là tín hiệu chính và latency mẫu thành công dễ sai lệch.
