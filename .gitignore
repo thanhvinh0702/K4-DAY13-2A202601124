@@ -4,6 +4,10 @@ __pycache__/
 .DS_Store
 data/logs.jsonl
 data/audit.jsonl
+data/uvicorn.stdout.log
+data/uvicorn.stderr.log
 .env
 .pytest_cache/
+.test-tmp/
+.test-cache/
 .antigravity/
